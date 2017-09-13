@@ -85,7 +85,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private final String DEFAULT_WIDGET_COLOR = "#03A9F4";
     private int width = 200;
     private int height = 200;
-
+    private int onActivityResultStatus=0;
     private Uri mCameraCaptureURI;
     private String mCurrentPhotoPath;
     private ResultCollector resultCollector;
@@ -303,6 +303,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             }
 
             activity.startActivityForResult(cameraIntent, requestCode);
+            onActivityResultStatus=1;
         } catch (Exception e) {
             resultCollector.notifyProblem(E_FAILED_TO_OPEN_CAMERA, e);
         }
@@ -329,6 +330,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
             final Intent chooserIntent = Intent.createChooser(galleryIntent, "Pick an image");
             activity.startActivityForResult(chooserIntent, IMAGE_PICKER_REQUEST);
+            onActivityResultStatus=1;
         } catch (Exception e) {
             resultCollector.notifyProblem(E_FAILED_TO_SHOW_PICKER, e);
         }
@@ -586,8 +588,9 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
     private void imagePickerResult(Activity activity, final int requestCode, final int resultCode, final Intent data) {
         if (resultCode == Activity.RESULT_CANCELED) {
-            //resultCollector.notifyProblem(E_PICKER_CANCELLED_KEY, E_PICKER_CANCELLED_MSG);
+            resultCollector.notifyProblem(E_PICKER_CANCELLED_KEY, E_PICKER_CANCELLED_MSG);
         } else if (resultCode == Activity.RESULT_OK) {
+            this.onActivityResultStatus=1;
             if (multiple) {
                 ClipData clipData = data.getClipData();
 
@@ -629,8 +632,9 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
     private void cameraPickerResult(Activity activity, final int requestCode, final int resultCode, final Intent data) {
         if (resultCode == Activity.RESULT_CANCELED) {
-            //resultCollector.notifyProblem(E_PICKER_CANCELLED_KEY, E_PICKER_CANCELLED_MSG);
+            resultCollector.notifyProblem(E_PICKER_CANCELLED_KEY, E_PICKER_CANCELLED_MSG);
         } else if (resultCode == Activity.RESULT_OK) {
+            this.onActivityResultStatus=1;
             Uri uri = mCameraCaptureURI;
 
             if (uri == null) {
@@ -673,12 +677,16 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
     @Override
     public void onActivityResult(Activity activity, final int requestCode, final int resultCode, final Intent data) {
-        if (requestCode == IMAGE_PICKER_REQUEST) {
-            imagePickerResult(activity, requestCode, resultCode, data);
-        } else if (requestCode == CAMERA_PICKER_REQUEST) {
-            cameraPickerResult(activity, requestCode, resultCode, data);
-        } else if (requestCode == UCrop.REQUEST_CROP) {
-            croppingResult(activity, requestCode, resultCode, data);
+        if(this.onActivityResultStatus>0) {
+            this.onActivityResultStatus=0;
+
+            if (requestCode == IMAGE_PICKER_REQUEST) {
+                imagePickerResult(activity, requestCode, resultCode, data);
+            } else if (requestCode == CAMERA_PICKER_REQUEST) {
+                cameraPickerResult(activity, requestCode, resultCode, data);
+            } else if (requestCode == UCrop.REQUEST_CROP) {
+                croppingResult(activity, requestCode, resultCode, data);
+            }
         }
     }
 
